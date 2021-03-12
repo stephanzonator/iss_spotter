@@ -2,6 +2,10 @@ const request = require('request');
 const ipPageName = `https://api.ipify.org?format=json`;
 const coordPageName = "https://freegeoip.app/json/";
 
+const nextISSTimesForMyLocation = function(callback) {
+  fetchMyIP(callback);
+};
+
 const fetchMyIP = function(callback) {
   request(ipPageName, (error, response, body) => {
     
@@ -17,7 +21,7 @@ const fetchMyIP = function(callback) {
     }
 
     const ip = JSON.parse(body).ip;
-    callback(null, ip);
+    fetchCoordsByIP(ip, callback);
   });
 };
 
@@ -38,8 +42,9 @@ const fetchCoordsByIP = function(ip, callback) {
     // const { latitude, longitude } = JSON.parse(body);  //potentially better way to do this?
     const data = JSON.parse(body);
     const coord = {"lat": data.latitude, "lng": data.longitude};
+    fetchISSFlyOverTimes(coord, callback);
     // console.log("data: ", data);
-    callback(null, coord);
+    // callback(null, coord);
   });
 
 };
@@ -61,11 +66,18 @@ const fetchISSFlyOverTimes = function(coords, callback) {
     
     // const { latitude, longitude } = JSON.parse(body);  //potentially better way to do this?
     const data = JSON.parse(body);
-    callback(null, data["response"][0]);
+    let message = [];
+    for (const pass of data["response"]) {
+      const datetime = new Date(0);
+      datetime.setUTCSeconds(pass.risetime);
+      const duration = pass.duration;
+      message.push(`Next pass at ${datetime} for ${duration} seconds!`);
+    }
+    callback(null, message);
   });
 };
 
-module.exports = { fetchMyIP, fetchCoordsByIP, fetchISSFlyOverTimes  }; //,
+module.exports = { nextISSTimesForMyLocation }; //,
 
 
 
